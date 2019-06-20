@@ -4,12 +4,14 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Fantasy Kernel by TheFantasyGhost
+kernel.string=Revolution Kernel by Revolution Techs Team
 do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
 device.name1=beryllium
+device.name2=dipper
+device.name3=polaris
 '; } # end properties
 
 # shell variables
@@ -34,21 +36,11 @@ dump_boot;
 
 # begin ramdisk changes
 
-# init.rc
-backup_file init.rc;
-replace_string init.rc "cpuctl cpu,timer_slack" "mount cgroup none /dev/cpuctl cpu" "mount cgroup none /dev/cpuctl cpu,timer_slack";
-
-# init.tuna.rc
-backup_file init.tuna.rc;
-insert_line init.tuna.rc "nodiratime barrier=0" after "mount_all /fstab.tuna" "\tmount ext4 /dev/block/platform/omap/omap_hsmmc.0/by-name/userdata /data remount nosuid nodev noatime nodiratime barrier=0";
-append_file init.tuna.rc "bootscript" init.tuna;
-
-# fstab.tuna
-backup_file fstab.tuna;
-patch_fstab fstab.tuna /system ext4 options "noatime,barrier=1" "noatime,nodiratime,barrier=0";
-patch_fstab fstab.tuna /cache ext4 options "barrier=1" "barrier=0,nomblk_io_submit";
-patch_fstab fstab.tuna /data ext4 options "data=ordered" "nomblk_io_submit,data=writeback";
-append_file fstab.tuna "usbdisk" fstab;
+umount /vendor || true
+mount -o rw /dev/block/bootdevice/by-name/vendor /vendor
+exec_util "cp -a /tmp/anykernel/ramdisk/init.simple.sh /vendor/bin/"
+set_con qti_init_shell_exec /vendor/bin/init.simple.sh
+umount /vendor || true
 
 # end ramdisk changes
 
