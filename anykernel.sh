@@ -5,7 +5,7 @@
 # begin properties
 properties() { '
 kernel.string=Fantasy Kernel by TheFantasyGhost
-do.devicecheck=0
+do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
