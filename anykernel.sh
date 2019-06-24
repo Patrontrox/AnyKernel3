@@ -1,9 +1,9 @@
-# AnyKernel3 Ramdisk Mod Script
+# AnyKernel2 Ramdisk Mod Script
 # osm0sis @ xda-developers
 
 ## AnyKernel setup
 # begin properties
-properties() { '
+properties() {'
 kernel.string=Revolution Kernel by Revolution Techs Team
 do.devicecheck=1
 do.modules=0
@@ -12,38 +12,65 @@ do.cleanuponabort=0
 device.name1=beryllium
 device.name2=dipper
 device.name3=polaris
-'; } # end properties
+supported.versions=9,9.0
+'} # end properties
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
-is_slot_device=0;
+is_slot_device=auto;
 ramdisk_compression=auto;
 
 
 ## AnyKernel methods (DO NOT CHANGE)
 # import patching functions/variables - see for reference
-. tools/ak3-core.sh;
-
+. /tmp/anykernel/tools/ak2-core.sh;
 
 ## AnyKernel file attributes
 # set permissions/ownership for included ramdisk files
 chmod -R 750 $ramdisk/*;
 chown -R root:root $ramdisk/*;
 
+LD_PATH=/system/lib
+if [ -d /system/lib64 ]; then
+  LD_PATH=/system/lib64
+fi
 
+exec_util() {
+  LD_LIBRARY_PATH=/system/lib64 $UTILS $1
+}
+
+set_con() {
+  exec_util "chcon -h u:object_r:"$1":s0 $2"
+  exec_util "chcon u:object_r:"$1":s0 $2"
+}
+
+## Trim partitions
+#ui_print " "
+#ui_print "Triming cache & data partitions..."
+#fstrim -v /cache;
+#fstrim -v /data;
+
+
+ui_print "Decompressing image kernel..."
+ui_print "This might take some seconds."
 ## AnyKernel install
 dump_boot;
 
-# begin ramdisk changes
+# ramdisk patch
 
 umount /vendor || true
 mount -o rw /dev/block/bootdevice/by-name/vendor /vendor
 exec_util "cp -a /tmp/anykernel/ramdisk/init.simple.sh /vendor/bin/"
 set_con qti_init_shell_exec /vendor/bin/init.simple.sh
 umount /vendor || true
-
 # end ramdisk changes
 
-write_boot;
-## end install
+# Set magisk policy
+ui_print "Setting up magisk policy for SELinux...";
+$bin/magiskpolicy --load sepolicy --save sepolicy "allow init rootfs file execute_no_trans";
+$bin/magiskpolicy --load sepolicy_debug --save sepolicy_debug "allow init rootfs file execute_no_trans";
 
+ui_print "Regenerating image kernel and installing..."
+write_boot;
+
+## end install
